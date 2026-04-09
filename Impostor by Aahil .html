@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impostor Words</title>
+    <style>
+        /* === DESIGN & CORES === */
+        :root {
+            --primary: #4F46E5;
+            --secondary: #10B981;
+            --danger: #EF4444;
+            --bg-color: #F3F4F6;
+            --text-dark: #1F2937;
+            --text-light: #FFFFFF;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            box-sizing: border-box;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 5vh;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* === BOTÕES REAIS === */
+        button {
+            padding: 16px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:active {
+            transform: scale(0.96);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--text-light);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: var(--text-light);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: var(--text-light);
+            border: 2px solid white;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            box-shadow: none;
+        }
+
+        /* === ELEMENTOS EXTRAS === */
+        input[type="text"],
+        select {
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .player-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .player-list li {
+            background: #fff;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .impostor-selector {
+            background: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 10px;
+        }
+
+        /* === CARTÃO DE REVELAÇÃO === */
+        .card-container {
+            width: 100%;
+            height: 60vh;
+            min-height: 350px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Efeito de brilho de fundo no cartão estilo a imagem */
+        .card-container::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 70%);
+            pointer-events: none;
+        }
+
+        .card-title {
+            font-size: 32px;
+            font-weight: 900;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+        }
+
+        .card-subtitle {
+            font-size: 16px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .card-action-icon {
+            font-size: 50px;
+            margin-bottom: 10px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .card-action-text {
+            font-weight: bold;
+            font-size: 18px;
+            text-transform: uppercase;
+        }
+
+        .secret-word-revealed {
+            font-size: 40px;
+            font-weight: 900;
+            text-transform: uppercase;
+            display: none;
+            /* Escondido até clicar */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="screen-home" class="screen active">
+        <div
+            style="background: #EAFB04; padding: 10px; border-radius: 12px; display: inline-block; width: fit-content; margin: 0 auto; font-weight: 900; color: #000; line-height: 1; font-size: 24px;">
+            IMPOSTER<br>WHO?
+        </div>
+        <p>Descobre quem não sabe a palavra secreta!</p>
+
+        <div class="impostor-selector">
+            <label for="num-impostors" style="font-weight: bold; display: block; margin-bottom: 10px;">Quantidade de
+                Impostores:</label>
+            <select id="num-impostors">
+                <option value="1" selected>1 Impostor</option>
+                <option value="2">2 Impostores</option>
+                <option value="3">3 Impostores</option>
+                <option value="4">4 Impostores</option>
+                <option value="5">5 Impostores</option>
+            </select>
+        </div>
+
+        <button class="btn-primary" onclick="goToScreen('screen-players')">Jogar Agora</button>
+    </div>
+
+    <div id="screen-players" class="screen">
+        <h2>Adicionar Jogadores</h2>
+        <input type="text" id="player-input" placeholder="Nome do jogador..." onkeypress="handleEnter(event)">
+        <button class="btn-secondary" onclick="addPlayer()">Adicionar</button>
+        <ul id="player-list-ul" class="player-list"></ul>
+        <button class="btn-primary" onclick="goToCategories()" style="margin-top: 10px;">Continuar</button>
+        <button class="btn-outline" onclick="goToScreen('screen-home')">Voltar</button>
+    </div>
+
+    <div id="screen-categories" class="screen">
+        <h2>Escolha a Categoria</h2>
+        <div id="categories-container" style="display: flex; flex-direction: column; gap: 10px;">
+        </div>
+        <button class="btn-outline" onclick="goToScreen('screen-players')" style="margin-top: 15px;">Voltar aos
+            Jogadores</button>
+    </div>
+
+    <div id="screen-card" class="screen">
+        <div id="player-card" class="card-container" onclick="revealCard()">
+            <h1 id="card-player-name" class="card-title">JOGADOR 1</h1>
+            <p id="card-instruction" class="card-subtitle">Não diga a palavra para os outros jogadores.</p>
+
+            <div id="card-action">
+                <div class="card-action-icon">👆</div>
+                <div class="card-action-text">TOQUE PARA REVELAR</div>
+            </div>
+
+            <div id="card-word" class="secret-word-revealed">
+                PALAVRA SECRETA
+            </div>
+        </div>
+
+        <button id="btn-next-player" class="btn-primary" onclick="nextPlayer()"
+            style="display: none; margin-top: 20px;">
+            Esconder e Passar
+        </button>
+    </div>
+
+    <div id="screen-discussion" class="screen">
+        <h2>O telefone passou por todos!</h2>
+        <p style="font-size: 1.2rem;">Agora discutam e descubram quem é o impostor!</p>
+        <button class="btn-danger" onclick="resetGame()" style="margin-top: 30px; border-color: transparent;">Terminar e
+            Iniciar Novo Jogo</button>
+    </div>
+
+    <script>
+
+        const wordDatabase = {
+            // --- CATEGORIAS EXISTENTES EXPANDIDAS ---
+            "Animais": [
+                "Cachorro", "Gato", "Elefante", "Leão", "Tubarão", "Pinguim", "Girafa", "Macaco",
+                "Tigre", "Zebra", "Coelho", "Galinha", "Porco", "Vaca", "Cavalo", "Cabra",
+                "Pato", "Rato", "Cobra", "Águia", "Coruja", "Baleia", "Golfinho", "Foca",
+                "Camelo", "Hipopótamo", "Rinoceronte", "Esquilo", "Abelha", "Formiga"
+            ],
+            "Comida": [
+                "Pizza", "Hambúrguer", "Sushi", "Lasanha", "Salada", "Churrasco", "Sopa", "Tacos",
+                "Arroz", "Feijão", "Macarrão", "Ovo", "Queijo", "Presunto", "Pão", "Bolo",
+                "Sorvete", "Chocolate", "Brigadeiro", "Pipoca", "Batata", "Cenoura", "Tomate", "Alface",
+                "Banana", "Maçã", "Uva", "Laranja", "Morango", "Melancia"
+            ],
+            "Países": [
+                "Brasil", "Moçambique", "Japão", "Canadá", "França", "Austrália", "Angola", "Portugal",
+                "Argentina", "Chile", "México", "Estados Unidos", "Inglaterra", "Espanha", "Itália", "Alemanha",
+                "China", "Índia", "Rússia", "África do Sul", "Egito", "Grécia", "Suécia", "Noruega",
+                "Tailândia", "Coreia do Sul", "Cuba", "Peru", "Colômbia", "Turquia"
+            ],
+            "Profissões": [
+                "Médico", "Professor", "Engenheiro", "Bombeiro", "Programador", "Polícia", "Padeiro",
+                "Advogado", "Dentista", "Veterinário", "Jornalista", "Motorista", "Cozinheiro", "Garçom",
+                "Mecânico", "Eletricista", "Carpinteiro", "Pintor", "Jardineiro", "Carteiro",
+                "Farmacêutico", "Enfermeiro", "Arquiteto", "Designer", "Cantor", "Ator", "Escritor",
+                "Piloto", "Cientista", "Vendedor"
+            ],
+            "Objetos da Casa": [
+                "Sofá", "Televisão", "Geladeira", "Cama", "Micro-ondas", "Mesa", "Cadeira",
+                "Fogão", "Liquidificador", "Ventilador", "Abajur", "Tapete", "Cortina", "Almofada",
+                "Espelho", "Vassoura", "Rodo", "Balde", "Sabonete", "Toalha",
+                "Escova de Dente", "Pente", "Tesoura", "Panela", "Prato", "Copo", "Garfo", "Faca",
+                "Colher", "Computador"
+            ],
+
+            // --- NOVAS CATEGORIAS (4 temas) ---
+            "Frutas": [
+                "Maçã", "Banana", "Laranja", "Uva", "Morango", "Melancia", "Abacaxi", "Manga",
+                "Pera", "Pêssego", "Kiwi", "Limão", "Coco", "Goiaba", "Acerola", "Jabuticaba",
+                "Caju", "Amora", "Framboesa", "Cereja", "Tangerina", "Mamão", "Melão", "Maracujá",
+                "Carambola", "Figo", "Ameixa", "Damasco", "Romã", "Nectarina"
+            ],
+            "Esportes": [
+                "Futebol", "Basquete", "Vôlei", "Tênis", "Natação", "Atletismo", "Judô", "Surfe",
+                "Skate", "Ciclismo", "Boxe", "Ginástica", "Handebol", "Rúgbi", "Beisebol", "Golfe",
+                "Hipismo", "Esgrima", "Canoagem", "Remo", "Badminton", "Squash", "Patinação", "Xadrez",
+                "Arco e Flecha", "Levantamento de Peso", "Lutas", "Polo Aquático", "Triatlo", "Alpinismo"
+            ],
+
+            "Roupas": [
+                "Camisa", "Calça", "Vestido", "Saia", "Bermuda", "Shorts", "Blusa", "Casaco",
+                "Jaqueta", "Moletom", "Suéter", "Meia", "Tênis", "Sandália", "Bota", "Chinelo",
+                "Gravata", "Cinto", "Chapéu", "Boné", "Luva", "Cachecol", "Pijama", "Uniforme",
+                , "Lenço"
+            ],
+
+            "Aleatório": [
+                "Macaco", "Chapéu", "Bolacha", "Carro", "Bicicleta", "Lápis", "Livro", "Janela",
+                "Porta", "Relógio", "Telefone", "Cadeado", "Mochila", "Carteira", "Óculos", "Guarda-chuva",
+                "Chave", "Moeda", "Bola", "Pipa", "Robô", "Foguete", "Nuvem", "Estrela",
+                "Lua", "Sol", "Praia", "Montanha", "Rio", "Floresta",
+
+                // +50 novas palavras
+                "Copo", "Prato", "Colher", "Garfo", "Mesa", "Cadeira", "Cama", "Almofada", "Cobertor", "Toalha",
+                "Sabão", "Escova", "Pasta", "Banho", "Chuveiro", "Espelho", "Pente", "Perfume", "Camisa", "Calça",
+                "Sapato", "Meia", "Boné", "Casaco", "Saia", "Vestido", "Anel", "Pulseira", "Brinco", "Colar",
+                "Geladeira", "Fogão", "Panela", "Faca", "Forno", "Microondas", "Leite", "Pão", "Queijo", "Ovo",
+                "Maçã", "Banana", "Uva", "Laranja", "Manga", "Abacaxi", "Melancia", "Cenoura", "Batata", "Tomate"
+            ],
+            "Natureza": [
+                "Sol", "Lua", "Estrela", "Nuvem", "Chuva", "Vento", "Arco-íris", "Raio", "Neve", "Nevoeiro",
+                "Rio", "Lago", "Mar", "Oceano", "Cachoeira", "Praia", "Areia", "Ilha", "Baía", "Recife",
+                "Montanha", "Colina", "Vale", "Planície", "Deserto", "Caverna", "Rochedo", "Pedra", "Terra", "Solo",
+                "Floresta", "Selva", "Bosque", "Árvore", "Arbusto", "Planta", "Flor", "Folha", "Raiz", "Tronco",
+                "Semente", "Fruta", "Grama", "Musgo", "Liana", "Galho", "Céu", "Horizonte", "Aurora", "Pôr do sol"
+            ],
+            "Transportes": [
+                "Carro", "Bicicleta", "Moto", "Autocarro", "Comboio", "Avião", "Barco", "Navio", "Helicóptero", "Táxi",
+                "Camião", "Van", "Carrinha", "Metro", "Elétrico", "Trotinete", "Patinete", "Skate", "Bicicleta elétrica", "Motocicleta",
+                "Jato", "Avião de carga", "Barco a remo", "Lancha", "Ferry", "Submarino", "Balão", "Dirigível", "Teleférico", "Funicular",
+                "Trator", "Bulldozer", "Escavadora", "Ambulância", "Carro de polícia", "Camião de bombeiros", "Caravana", "Reboque", "Kart", "Buggy",
+                "Monotrilho", "Comboio rápido", "Avião privado", "Helicóptero de resgate", "Barco de pesca", "Navio de cruzeiro", "Jet ski", "Barco inflável", "Canoa", "Caiaque"
+            ]
+        };
+
+        // Paletas de cores vivas para os cartões
+        const cardColors = ['#FDE047', '#6EE7B7', '#93C5FD', '#F9A8D4', '#C4B5FD', '#FDBA74', '#D9F99D'];
+
+        // ==========================================
+        // 2. VARIÁVEIS DO JOGO
+        // ==========================================
+        let players = [];
+        let currentPlayerIndex = 0;
+        let impostors = []; // Agora é um array para suportar múltiplos impostores
+        let selectedWord = "";
+        let isCardRevealed = false;
+
+        // ==========================================
+        // 3. NAVEGAÇÃO E JOGADORES
+        // ==========================================
+        function goToScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') addPlayer();
+        }
+
+        function addPlayer() {
+            const input = document.getElementById('player-input');
+            const name = input.value.trim();
+            if (name) {
+                players.push(name);
+                input.value = "";
+                updatePlayerList();
+            }
+        }
+
+        function removePlayer(index) {
+            players.splice(index, 1);
+            updatePlayerList();
+        }
+
+        function updatePlayerList() {
+            const ul = document.getElementById('player-list-ul');
+            ul.innerHTML = "";
+            players.forEach((p, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${p}</span> <span style="color:red; cursor:pointer;" onclick="removePlayer(${index})">✖</span>`;
+                ul.appendChild(li);
+            });
+        }
+
+        function goToCategories() {
+            const numImpostors = parseInt(document.getElementById('num-impostors').value);
+
+            if (players.length < 3) {
+                alert("Precisas de pelo menos 3 jogadores para jogar!");
+                return;
+            }
+            if (players.length <= numImpostors) {
+                alert(`Tens ${players.length} jogadores. O número de impostores (${numImpostors}) tem de ser menor que o total de jogadores!`);
+                return;
+            }
+
+            loadCategories();
+            goToScreen('screen-categories');
+        }
+
+        function loadCategories() {
+            const container = document.getElementById('categories-container');
+            container.innerHTML = "";
+
+            for (const category in wordDatabase) {
+                const btn = document.createElement('button');
+                btn.className = "btn-secondary";
+                btn.innerText = category;
+                btn.onclick = () => startGame(category);
+                container.appendChild(btn);
+            }
+        }
+
+        // ==========================================
+        // 4. LÓGICA DO JOGO
+        // ==========================================
+        function startGame(categoryName) {
+            const numImpostors = parseInt(document.getElementById('num-impostors').value);
+
+            // Sorteia a Palavra
+            const wordsArray = wordDatabase[categoryName];
+            const randomWordIndex = Math.floor(Math.random() * wordsArray.length);
+            selectedWord = wordsArray[randomWordIndex];
+
+            // Sorteia os Impostores
+            impostors = [];
+            while (impostors.length < numImpostors) {
+                let randomPlayer = Math.floor(Math.random() * players.length);
+                if (!impostors.includes(randomPlayer)) {
+                    impostors.push(randomPlayer);
+                }
+            }
+
+            currentPlayerIndex = 0;
+            showPlayerCard();
+        }
+
+        function showPlayerCard() {
+            if (currentPlayerIndex >= players.length) {
+                goToScreen('screen-discussion');
+                return;
+            }
+
+            isCardRevealed = false;
+
+            // Resetar cores da tela e do texto para o padrão
+            document.body.style.backgroundColor = "var(--bg-color)";
+            const card = document.getElementById('player-card');
+            card.style.color = "var(--text-dark)";
+
+            // Escolher cor do cartão baseada no jogador
+            const colorIndex = currentPlayerIndex % cardColors.length;
+            card.style.backgroundColor = cardColors[colorIndex];
+
+            // Atualizar textos
+            document.getElementById('card-player-name').innerText = players[currentPlayerIndex];
+            document.getElementById('card-instruction').style.display = "block";
+
+            // Mostrar ação e esconder palavra
+            document.getElementById('card-action').style.display = "block";
+            document.getElementById('card-word').style.display = "none";
+            document.getElementById('btn-next-player').style.display = "none";
+
+            goToScreen('screen-card');
+        }
+
+        function revealCard() {
+            if (isCardRevealed) return; // Evita duplo clique
+            isCardRevealed = true;
+
+            const card = document.getElementById('player-card');
+            const wordDisplay = document.getElementById('card-word');
+
+            // Esconde a mãozinha e a instrução
+            document.getElementById('card-action').style.display = "none";
+            document.getElementById('card-instruction').style.display = "none";
+            wordDisplay.style.display = "block";
+
+            // Verifica se é impostor
+            if (impostors.includes(currentPlayerIndex)) {
+                wordDisplay.innerText = "VOCÊ É O IMPOSTOR!";
+
+                // TELA INTEIRA VERMELHA
+                document.body.style.backgroundColor = "var(--danger)";
+                card.style.backgroundColor = "var(--danger)"; // Fundo do cartão igual
+                card.style.color = "#FFFFFF"; // Texto branco para contrastar
+
+            } else {
+                wordDisplay.innerText = selectedWord;
+            }
+
+            // Mostra o botão para passar ao próximo
+            document.getElementById('btn-next-player').style.display = "block";
+        }
+
+        function nextPlayer() {
+            currentPlayerIndex++;
+            showPlayerCard();
+        }
+
+        function resetGame() {
+            currentPlayerIndex = 0;
+            impostors = [];
+            selectedWord = "";
+            document.body.style.backgroundColor = "var(--bg-color)";
+            goToScreen('screen-categories');
+        }
+    </script>
+</body>
+
+</html>
